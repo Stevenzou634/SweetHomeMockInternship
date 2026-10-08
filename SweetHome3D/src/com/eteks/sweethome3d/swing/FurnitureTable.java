@@ -727,10 +727,33 @@ public class FurnitureTable extends JTable implements View, Printable {
    * Prints this component to make it fill <code>pageFormat</code> imageable size.
    */
   public int print(Graphics g, PageFormat pageFormat, int pageIndex) throws PrinterException {
-    // Create a printable column model from the column model of this table 
+    return print(g, pageFormat, pageIndex, false);
+  }
+
+  /**
+   * Prints this component to make it fill <code>pageFormat</code> imageable size,
+   * adding a Level column at the end of the printed table if <code>levelColumnPrinted</code>
+   * is <code>true</code> and that column isn't displayed. The columns displayed on screen
+   * aren't modified.
+   */
+  public int print(Graphics g, PageFormat pageFormat, int pageIndex,
+                   boolean levelColumnPrinted) throws PrinterException {
+    // Create a printable column model from the column model of this table
     // with printable renderers for each column
     DefaultTableColumnModel printableColumnModel = new DefaultTableColumnModel();
     TableColumnModel columnModel = getColumnModel();
+    List<TableColumn> printedColumns = new ArrayList<TableColumn>();
+    for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
+      printedColumns.add(columnModel.getColumn(columnIndex));
+    }
+    if (levelColumnPrinted
+            && columnModel instanceof FurnitureTableColumnModel) {
+      TableColumn levelColumn = ((FurnitureTableColumnModel)columnModel).availableColumns.get(
+              HomePieceOfFurniture.SortableProperty.LEVEL);
+      if (levelColumn != null && !printedColumns.contains(levelColumn)) {
+        printedColumns.add(levelColumn);
+      }
+    }
     final DefaultTableCellRenderer defaultRenderer = new DefaultTableCellRenderer();
     defaultRenderer.setHorizontalAlignment(DefaultTableCellRenderer.CENTER);
     TableCellRenderer printableHeaderRenderer = new TableCellRenderer() {
@@ -750,8 +773,7 @@ public class FurnitureTable extends JTable implements View, Printable {
           return headerRendererLabel;
         }
       };
-    for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
-      final TableColumn tableColumn = columnModel.getColumn(columnIndex);
+    for (final TableColumn tableColumn : printedColumns) {
       // Create a printable column from existing table column
       TableColumn printableColumn = new TableColumn();
       printableColumn.setIdentifier(tableColumn.getIdentifier());
